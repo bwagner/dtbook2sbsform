@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="LibLouisSaxonExtension" default="default" basedir=".">
+<project name="dtbook2sbsform" default="default" basedir=".">
 
 	<!-- Copyright (C) 2010 Swiss Library for the Blind, Visually Impaired and Print Disabled -->
 
-	<!-- This file is part of LiblouisSaxonExtension. -->
+	<!-- This file is part of dtbook2sbsform. -->
 
-	<!-- LiblouisSaxonExtension is free software: you can redistribute it -->
+	<!-- dtbook2sbsform is free software: you can redistribute it -->
 	<!-- and/or modify it under the terms of the GNU Lesser General Public -->
 	<!-- License as published by the Free Software Foundation, either -->
 	<!-- version 3 of the License, or (at your option) any later version. -->
@@ -18,24 +18,19 @@
 	<!-- You should have received a copy of the GNU Lesser General Public -->
 	<!-- License along with this program. If not, see -->
 	<!-- <http://www.gnu.org/licenses/>. -->
-	<!--
-
-	TODO:
-		- separate jars for app and factory.
-		- identify commonalities
-		- (for now they're both in ${app.jar})
-	-->
 	<property name="build.dir" value="bin" />
-	<property name="app.name" value="LiblouisSaxonExtension" />
-	<property name="app.jar" value="liblouissaxonx.jar" />
-	<property name="factory.jar" value="liblouissaxonxfactory.jar" />
+	<property name="app.name" value="${ant.project.name}" />
+	<property name="utility.jar" value="linebreaker.jar" />
 	<property name="src.dir" value="src" />
 	<property name="test_src.dir" value="test_src" />
 	<property name="lib.dir" value="lib" />
-	<property name="app.manifest" value="MANIFEST.MF" />
+	<property name="zipfile" value="${app.name}.zip" />
+	
+	<!-- used for utfx -->
+	<property name="testrunner" value="utfx.runner.TestRunner" />
 
     <presetdef name="my.javac">
-	<javac includeantruntime="false" />
+		<javac includeantruntime="false" />
     </presetdef>
 
 	<path id="classpath.path">
@@ -52,11 +47,12 @@
 	<target name="default" depends="jar" />
 
 	<target name="jar" depends="compile, git.revision" description="build jar">
-		<manifest file="${app.manifest}">
-			<attribute name="Built-By" value="${user.name}" />
-			<attribute name="Implementation-Version" value="${repository.version}" />
-		</manifest>
-		<jar jarfile="${app.jar}" basedir="${build.dir}" includes="**/*.class" excludes="**/*Test.class" manifest="${app.manifest}" />
+		<jar jarfile="${utility.jar}" basedir="${build.dir}" includes="**/*.class" excludes="**/*Test.class">
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+				<attribute name="Implementation-Version" value="${repository.version}" />
+			</manifest>
+		</jar>
 	</target>
 
 	<target name="compile" depends="init">
@@ -69,7 +65,7 @@
 		</my.javac>
 	</target>
 
-	<target name="test" depends="compile" description="test">
+	<target name="src_test" depends="compile" description="run src test">
 		<junit printsummary="yes" fork="yes" haltonfailure="no" haltonerror="no">
 
 			<formatter type="plain" usefile="false" />
@@ -91,19 +87,36 @@
 					<include name="**/*Test.java" />
 				</fileset>
 			</batchtest>
-			<!--
-			<test name="ch.sbs.liblouis.utils.LineBreakerTest" />
-			<test name="org.liblouis.LouisTransformTest" />
-			-->
 		</junit>
 	</target>
+	
+	<path id="runtime.classpath">
+		<pathelement location="lib/saxon9he.jar"/>
+		<pathelement location="lib/louis.jar"/>
+		<pathelement location="lib/jna.jar"/>
+		<pathelement location="lib/liblouissaxonx.jar"/>
+		<pathelement location="lib/utfxFat.jar"/>
+		<pathelement location="."/>
+	</path>
+	
+	<target name="utfx" description="run utfx tests">
+		<java classname="${testrunner}" fork="yes">
+			<jvmarg value="-enableassertions" />
+			<jvmarg value="-Xmx128m" />
+			<jvmarg value="-Djavax.xml.transform.TransformerFactory=org.liblouis.transformerfactory.LouisExtensionTransformerFactoryImpl" />
+			<jvmarg value="-Dutfx.test.dir=test_xsl" />
+			<arg value="utfx.framework.XSLTRegressionTest" />
+			<classpath refid="runtime.classpath" />
+		</java>
+	</target>
+	
+	<target name="test" depends="src_test, utfx" description="run src_test and utfx_tests"/>
 
 	<target name="clean" description="clean">
 		<delete dir="${build.dir}" />
-		<delete file="${app.jar}" />
-		<delete file="${factory.jar}" />
+		<delete file="${utility.jar}" />
 		<delete file="utfx_log.xml" />
-		<delete file="${app.manifest}" />
+		<delete file="${zipfile}" />
 	</target>
 
 	<available file=".git" type="dir" property="git.present" />
@@ -124,8 +137,8 @@
 	</target>
 
 	<target name="dist" depends="jar"
-		description="Builds a zipfile containing everything needed">
-	  <zip destfile="${app.name}.zip">
+		description="Builds a zipfile containing everything needed to run the shell scripts">
+	  <zip destfile="${zipfile}">
 	    <zipfileset dir="${lib.dir}" prefix="${app.name}/${lib.dir}">
 	      <include name="*.jar"/>
 	    </zipfileset>
