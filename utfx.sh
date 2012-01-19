@@ -1,9 +1,9 @@
 # Copyright (C) 2010 Swiss Library for the Blind, Visually Impaired and Print
 # Disabled
 #
-# This file is part of LiblouisSaxonExtension.
+# This file is part of dtbook2sbsform.
 #
-# LiblouisSaxonExtension is free software: you can redistribute it
+# dtbook2sbsform is free software: you can redistribute it
 # and/or modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation, either
 # version 3 of the License, or (at your option) any later version.
@@ -34,12 +34,13 @@ if [ "$1" = "-?" ] ; then
 fi
 
 LOUIS_TRANSFORM_FACTORY=-Djavax.xml.transform.TransformerFactory=org.liblouis.transformerfactory.LouisExtensionTransformerFactoryImpl
-UTFX=.:utfx_lib/utfxFat.jar
 
 UTFX_TEST=${@:-"-Dutfx.test.dir=test_xsl"}
 
 LIB=lib
-CP=$LIB/saxon9he.jar:$LIB/louis.jar:$LIB/jna.jar:liblouissaxonx.jar:$UTFX
+# . required in class path, so utfx.properties is found!
+UTFX=.:$LIB/utfxFat.jar
+CP=$LIB/saxon9he.jar:$LIB/louis.jar:$LIB/jna.jar:$LIB/liblouissaxonx.jar:$UTFX
 
 java $LOUIS_TRANSFORM_FACTORY $UTFX_TEST \
     -cp $CP utfx.runner.TestRunner utfx.framework.XSLTRegressionTest
